@@ -56,4 +56,11 @@ if __name__ == '__main__':
     print("Genome seq 1:\n" + genome1 + "\n")
     #print("Genome seq 2:\n" + genome2 + "\n")
 
-    print(generateSequence(genome1, "strict", 5, 8, 20))
+    result = generateSequence(genome1, "strict", 5, 8, 20)
+
+    writeFile = open("./generatedGenome.txt", "w")
+    for subSeq in result:
+        writeFile.write(subSeq)
+        if(subSeq != result[-1]):
+            writeFile.write("\n")
+    writeFile.close()
