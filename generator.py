@@ -24,7 +24,7 @@ def generateSequence(sequence, mode, overlapping = 3, minLen = 5, maxLen = 20):
         print("Maximum length can't smaller than minimum length!")
         return []
 
-    print("Generating genome sequences.")
+    print("= Generating genome sequences.")
 
     while(end < len(sequence)):
 
@@ -42,7 +42,7 @@ def generateSequence(sequence, mode, overlapping = 3, minLen = 5, maxLen = 20):
             print("Wrong mode!")
             return []
 
-    print("Generated " + str(len(subSeq)) + " sequences.")
+    print("= Generated " + str(len(subSeq)) + " sequences.")
     return subSeq
 
 
