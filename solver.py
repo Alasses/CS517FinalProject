@@ -2,6 +2,7 @@ from pysmt.shortcuts import Symbol, And, Or, Not, is_sat, get_model
 from datetime import datetime
 import graph
 import generator
+import timeit
 
 
 def GraphToClause(graph, n, keyList):
@@ -81,7 +82,7 @@ def GraphToClause(graph, n, keyList):
 
         #input("Anything to continue:")
 
-        #print ("\033[A                             \033[A")
+        print ("\033[A                             \033[A")
 
     print("= Finish generating clauses")
 
@@ -97,84 +98,96 @@ if __name__ == "__main__":
     genome1 = file1.read().replace("\n",'')
     file1.close()
 
-    stop = False
-    tries = 1
-    while not stop and tries < 11:
-        print("== " + str(tries) + "'th try:")
-        tries += 1
+    k = [10, 15, 20]
+    o = [3, 5, 8]
 
-        #Generate random genome, using the generator.py
-        #Two generated results, one strict 5 overlapping,
-        #one random between 1 and 5 overlapping
+    for subseqlen in k:
+        for overlap in o:
 
-        reads = generator.generateSequence(genome1, "strict", 3, 5, 8)
-        #reads = generator.generateSequence(genome1, "random", 8, 9, 20)
+            start = timeit.default_timer()
 
-        #print(reads_strict)
+            stop = False
+            tries = 1
+            while not stop and tries < 2:
+                print("== " + str(tries) + "'th try:")
+                tries += 1
 
-        #Generate the graph
-        g = None
-        g = graph.Graph(reads)
-        g._construct_graph()
-        keyList = list(g.adjacency_dict.keys())
+                #Generate random genome, using the generator.py
+                #Two generated results, one strict 5 overlapping,
+                #one random between 1 and 5 overlapping
 
-        clause = GraphToClause(g.adjacency_dict, len(keyList), keyList)
+                reads = generator.generateSequence(genome1, "strict", overlap, subseqlen - 1, subseqlen)
+                #reads = generator.generateSequence(genome1, "random", 8, 9, 20)
 
-        #print(clause)
+                #print(reads_strict)
 
-        print("\n= Result:\n")
+                #Generate the graph
+                g = None
+                g = graph.Graph(reads)
+                g._construct_graph()
+                keyList = list(g.adjacency_dict.keys())
 
-        model = None
-        model = get_model(clause)
-        if(model):
-            #print(model)
-            print("= Find model")
-            orderList = []      #Store the node information
-            genomeList = []     #Store the raw genome based on node information
+                clause = GraphToClause(g.adjacency_dict, len(keyList), keyList)
 
-            #Find the node on path
-            for element in model:
-                if(str(element[1]) == "True"):
-                    parseNode = str(element[0]).split("_")
-                    orderList.append([int(parseNode[1]), int(parseNode[2])])
+                #print(clause)
 
-            #Order the node based on the order in path
-            orderList.sort(key = lambda e: e[0])
-            for element in orderList:
-                genomeList.append(keyList[element[1]])
-            #print(genomeList)
+                print("\n= Result:\n")
 
-            #Assembly the genome
-            originalGenome = genomeList[1]
-            for i in range(2, len(genomeList)):
-                overlap, _ = g._get_overlap(genomeList[i - 1], genomeList[i])
-                originalGenome += genomeList[i][overlap : ]
-            print("= Assembly result: " + str(originalGenome == genome1))
-            print(originalGenome)
-            print(genome1)
+                model = None
+                model = get_model(clause)
+                if(model):
+                    #print(model)
+                    print("= Find model")
+                    orderList = []      #Store the node information
+                    genomeList = []     #Store the raw genome based on node information
 
-            if(originalGenome == genome1):
-                stop = True
+                    #Find the node on path
+                    for element in model:
+                        if(str(element[1]) == "True"):
+                            parseNode = str(element[0]).split("_")
+                            orderList.append([int(parseNode[1]), int(parseNode[2])])
 
-                writeFile = open("./succeedGeneratedGenome" + str(datetime.now()) + ".txt", "w")
-                for subSeq in reads:
-                    writeFile.write(subSeq)
-                    if(subSeq != reads[-1]):
-                        writeFile.write("\n")
-                writeFile.close()
+                    #Order the node based on the order in path
+                    orderList.sort(key = lambda e: e[0])
+                    for element in orderList:
+                        genomeList.append(keyList[element[1]])
+                    #print(genomeList)
 
-        else:
-            print("= Identify as SAT: " + str(is_sat(clause, "z3")))
-            print("= No solution.")
-            writeFile = open("./failedGeneratedGenome" + str(datetime.now()) + ".txt", "w")
-            for subSeq in reads:
-                writeFile.write(subSeq)
-                if(subSeq != reads[-1]):
-                    writeFile.write("\n")
-            writeFile.close()
+                    #Assembly the genome
+                    originalGenome = genomeList[1]
+                    for i in range(2, len(genomeList)):
+                        overlap, _ = g._get_overlap(genomeList[i - 1], genomeList[i])
+                        originalGenome += genomeList[i][overlap : ]
+                    print("= Assembly result: " + str(originalGenome == genome1))
+                    print(originalGenome)
+                    print(genome1)
 
-        #print(clause)
+                    if(originalGenome == genome1):
+                        stop = True
 
-        #print(is_sat(clause))
+                        writeFile = open("./succeedGeneratedGenome" + str(datetime.now()) + ".txt", "w")
+                        for subSeq in reads:
+                            writeFile.write(subSeq)
+                            if(subSeq != reads[-1]):
+                                writeFile.write("\n")
+                        writeFile.close()
+
+                else:
+                    print("= Identify as SAT: " + str(is_sat(clause, "z3")))
+                    print("= No solution.")
+                    writeFile = open("./failedGeneratedGenome" + str(datetime.now()) + ".txt", "w")
+                    for subSeq in reads:
+                        writeFile.write(subSeq)
+                        if(subSeq != reads[-1]):
+                            writeFile.write("\n")
+                    writeFile.close()
+
+            stop = timeit.default_timer()
+
+            print('Time: ' + str(subseqlen) + " " + str(overlap), stop - start)
+
+                #print(clause)
+
+                #print(is_sat(clause))
 
 
