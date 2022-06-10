@@ -1,4 +1,5 @@
 from pysmt.shortcuts import Symbol, And, Or, Not, is_sat, get_model
+from datetime import datetime
 import graph
 import generator
 
@@ -106,14 +107,14 @@ if __name__ == "__main__":
         #Two generated results, one strict 5 overlapping,
         #one random between 1 and 5 overlapping
 
-        #reads_strict = generator.generateSequence(genome1, "strict", 3, 5, 8)
-        reads_random = generator.generateSequence(genome1, "random", 8, 9, 20)
+        reads = generator.generateSequence(genome1, "strict", 3, 5, 8)
+        #reads = generator.generateSequence(genome1, "random", 8, 9, 20)
 
         #print(reads_strict)
 
         #Generate the graph
         g = None
-        g = graph.Graph(reads_random)
+        g = graph.Graph(reads)
         g._construct_graph()
         keyList = list(g.adjacency_dict.keys())
 
@@ -155,9 +156,22 @@ if __name__ == "__main__":
             if(originalGenome == genome1):
                 stop = True
 
+                writeFile = open("./succeedGeneratedGenome" + str(datetime.now()) + ".txt", "w")
+                for subSeq in reads:
+                    writeFile.write(subSeq)
+                    if(subSeq != reads[-1]):
+                        writeFile.write("\n")
+                writeFile.close()
+
         else:
             print("= Identify as SAT: " + str(is_sat(clause, "z3")))
             print("= No solution.")
+            writeFile = open("./failedGeneratedGenome" + str(datetime.now()) + ".txt", "w")
+            for subSeq in reads:
+                writeFile.write(subSeq)
+                if(subSeq != reads[-1]):
+                    writeFile.write("\n")
+            writeFile.close()
 
         #print(clause)
 
