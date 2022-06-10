@@ -37,7 +37,7 @@ def GraphToClause(graph, n, keyList):
         # j - Represents position A
         # k - Represents position B
         for j in range(n):
-            for k in range(n):
+            for k in range(j + 1, n):
                 if(j != k):
                     symNoTwiceA = Symbol("X_" + str(j) + "_" + str(i))
                     symNoTwiceB = Symbol("X_" + str(k) + "_" + str(i))
@@ -58,7 +58,7 @@ def GraphToClause(graph, n, keyList):
         # j - Represents node A
         # k - Represents node B
         for j in range(n):
-            for k in range(n):
+            for k in range(j + 1, n):
                 if(j != k):
                     symNoSamePlaceA = Symbol("X_" + str(i) + "_" + str(j))
                     symNoSamePlaceB = Symbol("X_" + str(i) + "_" + str(k))
@@ -68,7 +68,7 @@ def GraphToClause(graph, n, keyList):
         #Nonadjacent node i and j can not be neighbor
         # i - Represents the position
         # j - Represents node A
-        # k - Represents node B 
+        # k - Represents node B
         if i < n - 1:
             for j in range(n):
                 for k in range(n):
@@ -76,7 +76,7 @@ def GraphToClause(graph, n, keyList):
                     if j != k and graph[keyList[j]][keyList[k]] == 0:
                         symExistA = Symbol("X_" + str(i) + "_" + str(j))
                         symExistB = Symbol("X_" + str(i + 1) + "_" + str(k))
-                        clause.append(Or(Not(symExistA), Not(symExistB)))       
+                        clause.append(Or(Not(symExistA), Not(symExistB)))
 
         #input("Anything to continue:")
 
@@ -95,55 +95,72 @@ if __name__ == "__main__":
     file1 = open("./genome3.txt", "r")
     genome1 = file1.read().replace("\n",'')
     file1.close()
-    
 
-    #Generate random genome, using the generator.py
-    #Two generated results, one strict 5 overlapping, 
-    #one random between 1 and 5 overlapping
-    reads_strict = generator.generateSequence(genome1, "strict", 5, 8, 20)
-    #reads_random = generator.generateSequence(genome1, "random", 5, 8, 20)
-    
-    #Generate the graph
-    g = graph.Graph(reads_strict)
-    g._construct_graph()
-    keyList = list(g.adjacency_dict.keys())
+    stop = False
+    tries = 1
+    while not stop and tries < 11:
+        print("== " + str(tries) + "'th try:")
+        tries += 1
 
-    clause = GraphToClause(g.adjacency_dict, len(keyList), keyList)
+        #Generate random genome, using the generator.py
+        #Two generated results, one strict 5 overlapping,
+        #one random between 1 and 5 overlapping
 
-    print("\n= Result:\n")
+        #reads_strict = generator.generateSequence(genome1, "strict", 3, 5, 8)
+        reads_random = generator.generateSequence(genome1, "random", 8, 9, 20)
 
-    model = get_model(clause)
-    if(model):
-        #print(model)
-        print("= Find model")
-        orderList = []      #Store the node information
-        genomeList = []     #Store the raw genome based on node information
+        #print(reads_strict)
 
-        #Find the node on path
-        for element in model:
-            if(str(element[1]) == "True"):
-                parseNode = str(element[0]).split("_")
-                orderList.append([int(parseNode[1]), int(parseNode[2])])
+        #Generate the graph
+        g = None
+        g = graph.Graph(reads_random)
+        g._construct_graph()
+        keyList = list(g.adjacency_dict.keys())
 
-        #Order the node based on the order in path
-        orderList.sort(key = lambda e: e[0])
-        for element in orderList:
-            genomeList.append(keyList[element[1]])
-        #print(genomeList)
+        clause = GraphToClause(g.adjacency_dict, len(keyList), keyList)
 
-        #Assembly the genome
-        originalGenome = genomeList[1]
-        for i in range(2, len(genomeList)):
-            overlap, _ = g._get_overlap(genomeList[i - 1], genomeList[i])
-            originalGenome += genomeList[i][overlap : ]
-        print("= Assembly result: " + str(originalGenome == genome1))
+        #print(clause)
 
-    else:
-        print("= Identify as SAT: " + str(is_sat(clause)))
-        print("= No solution.")
+        print("\n= Result:\n")
 
-    #print(clause)
+        model = None
+        model = get_model(clause)
+        if(model):
+            #print(model)
+            print("= Find model")
+            orderList = []      #Store the node information
+            genomeList = []     #Store the raw genome based on node information
 
-    #print(is_sat(clause))
+            #Find the node on path
+            for element in model:
+                if(str(element[1]) == "True"):
+                    parseNode = str(element[0]).split("_")
+                    orderList.append([int(parseNode[1]), int(parseNode[2])])
+
+            #Order the node based on the order in path
+            orderList.sort(key = lambda e: e[0])
+            for element in orderList:
+                genomeList.append(keyList[element[1]])
+            #print(genomeList)
+
+            #Assembly the genome
+            originalGenome = genomeList[1]
+            for i in range(2, len(genomeList)):
+                overlap, _ = g._get_overlap(genomeList[i - 1], genomeList[i])
+                originalGenome += genomeList[i][overlap : ]
+            print("= Assembly result: " + str(originalGenome == genome1))
+            print(originalGenome)
+            print(genome1)
+
+            if(originalGenome == genome1):
+                stop = True
+
+        else:
+            print("= Identify as SAT: " + str(is_sat(clause, "z3")))
+            print("= No solution.")
+
+        #print(clause)
+
+        #print(is_sat(clause))
 
 
